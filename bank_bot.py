@@ -3,30 +3,33 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 from telegram.constants import ParseMode
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+from google.oauth2.service_account import Credentials
 import asyncio
 import json
+import os
 from datetime import datetime
 
 # Config
-import os
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
 OWNER_ID = 1768830793
 SPREADSHEET_NAME = "RBank"
 SERVICE_ACCOUNT_FILE = "tg-project-01-b8db80779692.json"
 CURRENCY = "₱"
 
-# Setup Google Sheets using environment variables
-scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+# Setup Google Sheets using modern google-auth
+scope = [
+    "https://spreadsheets.google.com/feeds",
+    "https://www.googleapis.com/auth/drive"
+]
 
 # Get Google Sheets credentials from environment variables
 google_creds_json = os.environ.get('GOOGLE_CREDS_JSON')
 if google_creds_json:
     creds_dict = json.loads(google_creds_json)
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
 else:
     # Fallback to file (for local development only)
-    creds = ServiceAccountCredentials.from_json_keyfile_name(SERVICE_ACCOUNT_FILE, scope)
+    creds = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=scope)
 
 client = gspread.authorize(creds)
 sheet = client.open(SPREADSHEET_NAME).sheet1
@@ -1470,5 +1473,5 @@ app.add_handler(CallbackQueryHandler(button_callback))
 from telegram.ext import MessageHandler, filters
 app.add_handler(MessageHandler(filters.StatusUpdate.LEFT_CHAT_MEMBER, handle_left_member))
 
-print("✅ River Bank Bot is running!")
+print("✅ River Bank is running!")
 app.run_polling()
